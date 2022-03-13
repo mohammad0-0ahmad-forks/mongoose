@@ -875,7 +875,7 @@ export function model<T, U = unknown, TQueryHelpers = {}, TSchema = any>(
     /**
      * Create a new schema
      */
-    constructor(definition?: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | DocType, options?: SchemaOptions<PathTypeKey, StaticMethods, TInstanceMethods>);
+    constructor(definition?: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>, PathTypeKey> | DocType, options?: SchemaOptions<PathTypeKey, StaticMethods, TInstanceMethods>);
 
     /** Adds key path / schema type pairs to this schema. */
     add(obj: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | Schema, prefix?: string): this;
@@ -1025,20 +1025,20 @@ export function model<T, U = unknown, TQueryHelpers = {}, TSchema = any>(
     ? DateSchemaDefinition
     : (Function | string);
 
-  type SchemaDefinitionProperty<T = undefined> = SchemaDefinitionWithBuiltInClass<T> |
-    SchemaTypeOptions<T extends undefined ? any : T> |
+  type SchemaDefinitionProperty<T = undefined, TypeKey extends TypeKeyBaseType = DefaultTypeKey> = SchemaDefinitionWithBuiltInClass<T> |
+    SchemaTypeOptions<T extends undefined ? any : T, TypeKey> |
     typeof SchemaType |
     Schema<any, any, any> |
     Schema<any, any, any>[] |
-    SchemaTypeOptions<T extends undefined ? any : Unpacked<T>>[] |
+    SchemaTypeOptions<T extends undefined ? any : Unpacked<T>, TypeKey>[] |
     Function[] |
     SchemaDefinition<T> |
     SchemaDefinition<Unpacked<T>>[] |
     typeof SchemaTypes.Mixed;
 
-  type SchemaDefinition<T = undefined> = T extends undefined
+  type SchemaDefinition<T = undefined, TypeKey extends TypeKeyBaseType = DefaultTypeKey> = T extends undefined
     ? { [path: string]: SchemaDefinitionProperty; }
-    : { [path in keyof T]?: SchemaDefinitionProperty<T[path]>; };
+    : { [path in keyof T]?: SchemaDefinitionProperty<T[path], TypeKey>; };
 
   type Unpacked<T> = T extends (infer U)[] ?
     U :
@@ -1047,22 +1047,25 @@ export function model<T, U = unknown, TQueryHelpers = {}, TSchema = any>(
   type AnyArray<T> = T[] | ReadonlyArray<T>;
   type SchemaValidator<T> = RegExp | [RegExp, string] | Function | [Function, string] | ValidateOpts<T> | ValidateOpts<T>[];
 
-  export class SchemaTypeOptions<T> {
-    type?:
-      T extends string ? StringSchemaDefinition :
-      T extends number ? NumberSchemaDefinition :
-      T extends boolean ? BooleanSchemaDefinition :
-      T extends NativeDate ? DateSchemaDefinition :
-      T extends Map<any, any> ? SchemaDefinition<typeof Map> :
-      T extends Buffer ? SchemaDefinition<typeof Buffer> :
-      T extends Types.ObjectId ? ObjectIdSchemaDefinition :
-      T extends Types.ObjectId[] ? AnyArray<ObjectIdSchemaDefinition> | AnyArray<SchemaTypeOptions<ObjectId>> :
-      T extends object[] ? (AnyArray<Schema<any, any, any>> | AnyArray<SchemaDefinition<Unpacked<T>>> | AnyArray<SchemaTypeOptions<Unpacked<T>>>) :
-      T extends string[] ? AnyArray<StringSchemaDefinition> | AnyArray<SchemaTypeOptions<string>> :
-      T extends number[] ? AnyArray<NumberSchemaDefinition> | AnyArray<SchemaTypeOptions<number>> :
-      T extends boolean[] ? AnyArray<BooleanSchemaDefinition> | AnyArray<SchemaTypeOptions<boolean>> :
-      T extends Function[] ? AnyArray<Function | string> | AnyArray<SchemaTypeOptions<Unpacked<T>>> :
-      T | typeof SchemaType | Schema<any, any, any> | SchemaDefinition<T> | Function | AnyArray<Function>;
+  export type SchemaTypeOptions<T, TypeKey extends TypeKeyBaseType = DefaultTypeKey> = {
+    [K in TypeKey]?:
+    T extends string ? StringSchemaDefinition :
+    T extends number ? NumberSchemaDefinition :
+    T extends boolean ? BooleanSchemaDefinition :
+    T extends NativeDate ? DateSchemaDefinition :
+    T extends Map<any, any> ? SchemaDefinition<typeof Map> :
+    T extends Buffer ? SchemaDefinition<typeof Buffer> :
+    T extends Types.ObjectId ? ObjectIdSchemaDefinition :
+    T extends Types.ObjectId[] ? AnyArray<ObjectIdSchemaDefinition> | AnyArray<SchemaTypeOptions<ObjectId, TypeKey>> :
+    T extends object[] ? (AnyArray<Schema<any, any, any>> | AnyArray<SchemaDefinition<Unpacked<T>>> | AnyArray<SchemaTypeOptions<Unpacked<T>, TypeKey>>) :
+    T extends string[] ? AnyArray<StringSchemaDefinition> | AnyArray<SchemaTypeOptions<string, TypeKey>> :
+    T extends number[] ? AnyArray<NumberSchemaDefinition> | AnyArray<SchemaTypeOptions<number, TypeKey>> :
+    T extends boolean[] ? AnyArray<BooleanSchemaDefinition> | AnyArray<SchemaTypeOptions<boolean, TypeKey>> :
+    T extends Function[] ? AnyArray<Function | string> | AnyArray<SchemaTypeOptions<Unpacked<T>, TypeKey>> :
+    T | typeof SchemaType | Schema<any, any, any> | SchemaDefinition<T> | Function | AnyArray<Function>;
+  } & SchemaTypeOptionsBaseType<T>;
+
+  class SchemaTypeOptionsBaseType<T> {
 
     /** Defines a virtual with the given name that gets/sets this path. */
     alias?: string;
@@ -2391,7 +2394,7 @@ export function model<T, U = unknown, TQueryHelpers = {}, TSchema = any>(
     static get(getter: (value: any) => any): void;
 
     /** The class that Mongoose uses internally to instantiate this SchemaType's `options` property. */
-    OptionsConstructor: typeof SchemaTypeOptions;
+    OptionsConstructor: SchemaTypeOptions<unknown>;
 
     /** Cast `val` to this schema type. Each class that inherits from schema type should implement this function. */
     cast(val: any, doc: Document<any>, init: boolean, prev?: any, options?: any): any;
