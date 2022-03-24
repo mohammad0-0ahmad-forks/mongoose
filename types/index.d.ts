@@ -132,13 +132,14 @@ declare module 'mongoose' {
    */
   export function isObjectIdOrHexString(v: any): boolean;
 
-  export function model<T>(name: string, schema?: Schema<T, any, any> | Schema<T & Document, any, any>, collection?: string, options?: CompileModelOptions): Model<T>;
-  export function model<T, U, TQueryHelpers = {}>(
+  export function model<T, U = unknown, TQueryHelpers = {}, TSchema = any>(
     name: string,
-    schema?: Schema<T, U, TQueryHelpers>,
+    schema?: TSchema,
     collection?: string,
     options?: CompileModelOptions
-  ): U;
+  ): U extends Model<any>
+    ? U
+    : Model<T & InferSchemaType<TSchema>, TQueryHelpers, ObtainSchemaGeneric<TSchema, 'TInstanceMethods'>, {}, TSchema>;
 
   /** Returns an array of model names created on this instance of Mongoose. */
   export function modelNames(): Array<string>;
@@ -256,8 +257,8 @@ declare module 'mongoose' {
   }
 
   export const Model: Model<any>;
-  export interface Model<T, TQueryHelpers = {}, TMethodsAndOverrides = {}, TVirtuals = {}> extends NodeJS.EventEmitter, AcceptsDiscriminator {
-    new <DocType = AnyKeys<T> & AnyObject>(doc?: DocType, fields?: any | null, options?: boolean | AnyObject): HydratedDocument<T, TMethodsAndOverrides, TVirtuals>;
+  export interface Model<T, TQueryHelpers = {}, TMethodsAndOverrides = {}, TVirtuals = {}, TSchema = any> extends NodeJS.EventEmitter, AcceptsDiscriminator {
+    new<DocType = AnyKeys<T> & AnyObject>(doc?: DocType, fields?: any | null, options?: boolean | AnyObject): HydratedDocument<T, TMethodsAndOverrides, TVirtuals>;
 
     aggregate<R = any>(pipeline?: PipelineStage[], options?: mongodb.AggregateOptions, callback?: Callback<R[]>): Aggregate<Array<R>>;
     aggregate<R = any>(pipeline: PipelineStage[], cb: Function): Aggregate<Array<R>>;
