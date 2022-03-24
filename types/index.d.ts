@@ -2117,7 +2117,7 @@ declare module 'mongoose' {
     [key: string]: any;
   };
 
-  export type ApplyBasicQueryCasting<T> = T | T[] | any;
+  export type ApplyBasicQueryCasting<T, defaultT = T | T[] | {}> = T extends any[] ? T[0] & defaultT: defaultT;
   export type Condition<T> = ApplyBasicQueryCasting<T> | QuerySelector<ApplyBasicQueryCasting<T>>;
 
   export type _FilterQuery<T> = {
