@@ -257,7 +257,7 @@ declare module 'mongoose' {
   }
 
   export const Model: Model<any>;
-  export interface Model<T, TQueryHelpers = {}, TMethodsAndOverrides = {}, TVirtuals = {}, TSchema = any> extends NodeJS.EventEmitter, AcceptsDiscriminator {
+  export type Model<T, TQueryHelpers = {}, TMethodsAndOverrides = {}, TVirtuals = {}, TSchema = any> = NodeJS.EventEmitter & AcceptsDiscriminator & ObtainSchemaGeneric<TSchema, 'TStaticMethods'> & {
     new<DocType = AnyKeys<T> & AnyObject>(doc?: DocType, fields?: any | null, options?: boolean | AnyObject): HydratedDocument<T, TMethodsAndOverrides, TVirtuals>;
 
     aggregate<R = any>(pipeline?: PipelineStage[], options?: mongodb.AggregateOptions, callback?: Callback<R[]>): Aggregate<Array<R>>;
@@ -604,7 +604,7 @@ declare module 'mongoose' {
     where<ResultDoc = HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>(path: string, val?: any): QueryWithHelpers<Array<ResultDoc>, ResultDoc, TQueryHelpers, T>;
     where<ResultDoc = HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>(obj: object): QueryWithHelpers<Array<ResultDoc>, ResultDoc, TQueryHelpers, T>;
     where<ResultDoc = HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>(): QueryWithHelpers<Array<ResultDoc>, ResultDoc, TQueryHelpers, T>;
-  }
+  };
 
   export type UpdateWriteOpResult = mongodb.UpdateResult;
 
@@ -846,7 +846,7 @@ declare module 'mongoose' {
     /**
      * Create a new schema
      */
-    constructor(definition?: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | DocType, options?: SchemaOptions<TPathTypeKey>);
+    constructor(definition?: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | DocType, options?: SchemaOptions<TPathTypeKey, TStaticMethods>);
 
     /** Adds key path / schema type pairs to this schema. */
     add(obj: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | Schema, prefix?: string): this;
