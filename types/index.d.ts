@@ -235,6 +235,9 @@ declare module 'mongoose' {
   export interface AnyObject {
     [k: string]: any
   }
+
+  type FlexibleObject<T extends {}> = { [P in keyof (T & Omit<any, keyof T>)]?: P extends keyof T ? T[P] : any };
+
   export type Require_id<T> = T extends { _id?: any } ? (T & { _id: T['_id'] }) : (T & { _id: Types.ObjectId });
 
   export type HydratedDocument<DocType, TMethodsAndOverrides = {}, TVirtuals = {}> = DocType extends Document ? Require_id<DocType> : (Document<unknown, any, DocType> & Require_id<DocType> & TVirtuals & TMethodsAndOverrides);
@@ -301,15 +304,11 @@ declare module 'mongoose' {
     countDocuments(filter: FilterQuery<T>, options?: QueryOptions<T>, callback?: Callback<number>): QueryWithHelpers<number, HydratedDocument<T, TMethodsAndOverrides, TVirtuals>, TQueryHelpers, T>;
 
     /** Creates a new document or documents */
-    create(docs: (AnyKeys<T> | AnyObject)[], options?: SaveOptions): Promise<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>[]>;
-    create(docs: (AnyKeys<T> | AnyObject)[], callback: Callback<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>[]>): void;
-    create(doc: AnyKeys<T> | AnyObject): Promise<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>;
-    create(doc: AnyKeys<T> | AnyObject, callback: Callback<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>): void;
-    create<DocContents = AnyKeys<T>>(docs: DocContents[], options?: SaveOptions): Promise<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>[]>;
-    create<DocContents = AnyKeys<T>>(docs: DocContents[], callback: Callback<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>[]>): void;
-    create<DocContents = AnyKeys<T>>(doc: DocContents): Promise<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>;
-    create<DocContents = AnyKeys<T>>(...docs: DocContents[]): Promise<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>[]>;
-    create<DocContents = AnyKeys<T>>(doc: DocContents, callback: Callback<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>): void;
+    create<DocContents = FlexibleObject<T>>(docs: Array<T | DocContents>, options?: SaveOptions): Promise<HydratedDocument<UnpackedIntersection<T, DocContents>, TMethodsAndOverrides, TVirtuals>[]>;
+    create<DocContents = FlexibleObject<T>>(docs: Array<T | DocContents>, callback: Callback<HydratedDocument<UnpackedIntersection<T, DocContents>, TMethodsAndOverrides, TVirtuals>[]>): void;
+    create<DocContents = FlexibleObject<T>>(doc: T | DocContents): Promise<HydratedDocument<UnpackedIntersection<T, DocContents>, TMethodsAndOverrides, TVirtuals>>;
+    create<DocContents = FlexibleObject<T>>(...docs: Array<T | DocContents>): Promise<HydratedDocument<UnpackedIntersection<T, DocContents>, TMethodsAndOverrides, TVirtuals>[]>;
+    create<DocContents = FlexibleObject<T>>(doc: T | DocContents, callback: Callback<HydratedDocument<UnpackedIntersection<T, DocContents>, TMethodsAndOverrides, TVirtuals>>): void;
 
     /**
      * Create the collection for this model. By default, if no indexes are specified,
