@@ -842,7 +842,7 @@ declare module 'mongoose' {
     /**
      * Create a new schema
      */
-    constructor(definition?: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | DocType, options?: SchemaOptions<TPathTypeKey, TStaticMethods, TInstanceMethods, TQueryHelpers>);
+    constructor(definition?: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | DocType, options?: SchemaOptions<TPathTypeKey, TInstanceMethods, TQueryHelpers, TStaticMethods>);
 
     /** Adds key path / schema type pairs to this schema. */
     add(obj: SchemaDefinition<SchemaDefinitionType<EnforcedDocType>> | Schema, prefix?: string): this;
