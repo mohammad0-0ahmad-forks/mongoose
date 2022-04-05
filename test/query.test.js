@@ -3947,7 +3947,6 @@ describe('Query', function() {
   });
 
   it('should return query helper supplied in schema options query property instead of undefined', function(done) {
-
     const Model = db.model('Test', new Schema({
       userName: {
         type: String,
@@ -3962,7 +3961,9 @@ describe('Query', function() {
     }));
 
     Model.create({ userName: 'test' }, function(error) {
-      assert.ifError(error);
+      if (error instanceof Error) {
+        return done(error);
+      }
       Model.find().byUserName('test').exec(function(error, docs) {
         if (error instanceof Error) {
           return done(error);
