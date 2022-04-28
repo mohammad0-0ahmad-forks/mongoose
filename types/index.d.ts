@@ -259,7 +259,7 @@ declare module 'mongoose' {
 
   export const Model: Model<any>;
   export type Model<T, TQueryHelpers = {}, TMethodsAndOverrides = {}, TVirtuals = {}, TSchema = any> = NodeJS.EventEmitter & AcceptsDiscriminator & ObtainSchemaGeneric<TSchema, 'TStaticMethods'> & {
-    new<DocType = T>(doc?: DocType, fields?: any | null, options?: boolean | AnyObject): HydratedDocument<UnpackedIntersection<T, DocType>, TMethodsAndOverrides, TVirtuals>;
+    new<DocType = T>(doc?: DocType, fields?: any | null, options?: boolean | AnyObject): HydratedDocument<Omit<T, keyof DocType> & DocType, TMethodsAndOverrides, TVirtuals>;
 
     aggregate<R = any>(pipeline?: PipelineStage[], options?: mongodb.AggregateOptions, callback?: Callback<R[]>): Aggregate<Array<R>>;
     aggregate<R = any>(pipeline: PipelineStage[], cb: Function): Aggregate<Array<R>>;
