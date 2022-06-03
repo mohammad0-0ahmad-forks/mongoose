@@ -121,11 +121,11 @@ declare module 'mongoose' {
     SessionStarter {
     new <DocType = T>(doc?: DocType, fields?: any | null, options?: boolean | AnyObject): HydratedDocument<MergeType<T, DocType>, TMethodsAndOverrides, TVirtuals> & ObtainSchemaGeneric<TSchema, 'TStaticMethods'>;
 
-    aggregate<R = any>(pipeline?: PipelineStage[], options?: mongodb.AggregateOptions, callback?: Callback<R[]>): Aggregate<Array<R>>;
-    aggregate<R = any>(pipeline: PipelineStage[], callback?: Callback<R[]>): Aggregate<Array<R>>;
+      aggregate<R = any>(pipeline?: PipelineStage[], options?: mongodb.AggregateOptions, callback?: Callback<R[]>): Aggregate<Array<R>>;
+      aggregate<R = any>(pipeline: PipelineStage[], callback?: Callback<R[]>): Aggregate<Array<R>>;
 
-    /** Base Mongoose instance the model uses. */
-    base: Mongoose;
+      /** Base Mongoose instance the model uses. */
+      base: Mongoose;
 
     /**
    * If this is a discriminator model, `baseModelName` is the name of
@@ -178,8 +178,8 @@ declare module 'mongoose' {
     createCollection<T extends mongodb.Document>(callback: Callback<mongodb.Collection<T>>): void;
     createCollection<T extends mongodb.Document>(options?: mongodb.CreateCollectionOptions & Pick<SchemaOptions, 'expires'>): Promise<mongodb.Collection<T>>;
 
-    /** Connection the model uses. */
-    db: Connection;
+      /** Connection the model uses. */
+      db: Connection;
 
     /**
    * Deletes all of the documents that match `conditions` from the collection.
@@ -272,38 +272,38 @@ declare module 'mongoose' {
     insertMany<DocContents = T>(doc: DocContents, options: InsertManyOptions): Promise<Array<HydratedDocument<MergeType<MergeType<T, DocContents>, RequireOnlyTypedId<T>>, TMethodsAndOverrides, TVirtuals>>>;
     insertMany<DocContents = T>(doc: DocContents): Promise<Array<HydratedDocument<MergeType<MergeType<T, DocContents>, RequireOnlyTypedId<T>>, TMethodsAndOverrides, TVirtuals>>>;
 
-    /** The name of the model */
-    modelName: string;
+      /** The name of the model */
+      modelName: string;
 
-    /** Populates document references. */
-    populate(docs: Array<any>, options: PopulateOptions | Array<PopulateOptions> | string,
-      callback?: Callback<(HydratedDocument<T, TMethodsAndOverrides, TVirtuals>)[]>): Promise<Array<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>>;
-    populate(doc: any, options: PopulateOptions | Array<PopulateOptions> | string,
-      callback?: Callback<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>): Promise<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>;
+      /** Populates document references. */
+      populate(docs: Array<any>, options: PopulateOptions | Array<PopulateOptions> | string,
+        callback?: Callback<(HydratedDocument<T, TMethodsAndOverrides, TVirtuals>)[]>): Promise<Array<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>>;
+      populate(doc: any, options: PopulateOptions | Array<PopulateOptions> | string,
+        callback?: Callback<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>): Promise<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>;
 
 
-    /** Casts and validates the given object against this model's schema, passing the given `context` to custom validators. */
-    validate(callback?: CallbackWithoutResult): Promise<void>;
-    validate(optional: any, callback?: CallbackWithoutResult): Promise<void>;
-    validate(optional: any, pathsToValidate: PathsToValidate, callback?: CallbackWithoutResult): Promise<void>;
+      /** Casts and validates the given object against this model's schema, passing the given `context` to custom validators. */
+      validate(callback?: CallbackWithoutResult): Promise<void>;
+      validate(optional: any, callback?: CallbackWithoutResult): Promise<void>;
+      validate(optional: any, pathsToValidate: PathsToValidate, callback?: CallbackWithoutResult): Promise<void>;
 
-    /** Watches the underlying collection for changes using [MongoDB change streams](https://docs.mongodb.com/manual/changeStreams/). */
-    watch<ResultType extends mongodb.Document = any>(pipeline?: Array<Record<string, unknown>>, options?: mongodb.ChangeStreamOptions): mongodb.ChangeStream<ResultType>;
+      /** Watches the underlying collection for changes using [MongoDB change streams](https://docs.mongodb.com/manual/changeStreams/). */
+      watch<ResultType extends mongodb.Document = any>(pipeline?: Array<Record<string, unknown>>, options?: mongodb.ChangeStreamOptions): mongodb.ChangeStream<ResultType>;
 
-    /** Adds a `$where` clause to this query */
-    $where(argument: string | Function): QueryWithHelpers<Array<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>, HydratedDocument<T, TMethodsAndOverrides, TVirtuals>, TQueryHelpers, T>;
+      /** Adds a `$where` clause to this query */
+      $where(argument: string | Function): QueryWithHelpers<Array<HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>, HydratedDocument<T, TMethodsAndOverrides, TVirtuals>, TQueryHelpers, T>;
 
-    /** Registered discriminators for this model. */
-    discriminators: { [name: string]: Model<any> } | undefined;
+      /** Registered discriminators for this model. */
+      discriminators: { [name: string]: Model<any> } | undefined;
 
-    /** Translate any aliases fields/conditions so the final query or document object is pure */
-    translateAliases(raw: any): any;
+      /** Translate any aliases fields/conditions so the final query or document object is pure */
+      translateAliases(raw: any): any;
 
-    /** Creates a `distinct` query: returns the distinct values of the given `field` that match `filter`. */
-    distinct<ReturnType = any>(field: string, filter?: FilterQuery<T>, callback?: Callback<number>): QueryWithHelpers<Array<ReturnType>, HydratedDocument<T, TMethodsAndOverrides, TVirtuals>, TQueryHelpers, T>;
+      /** Creates a `distinct` query: returns the distinct values of the given `field` that match `filter`. */
+      distinct<ReturnType = any>(field: string, filter?: FilterQuery<T>, callback?: Callback<number>): QueryWithHelpers<Array<ReturnType>, HydratedDocument<T, TMethodsAndOverrides, TVirtuals>, TQueryHelpers, T>;
 
-    /** Creates a `estimatedDocumentCount` query: counts the number of documents in the collection. */
-    estimatedDocumentCount(options?: QueryOptions<T>, callback?: Callback<number>): QueryWithHelpers<number, HydratedDocument<T, TMethodsAndOverrides, TVirtuals>, TQueryHelpers, T>;
+      /** Creates a `estimatedDocumentCount` query: counts the number of documents in the collection. */
+      estimatedDocumentCount(options?: QueryOptions<T>, callback?: Callback<number>): QueryWithHelpers<number, HydratedDocument<T, TMethodsAndOverrides, TVirtuals>, TQueryHelpers, T>;
 
     /**
    * Returns a document with its `_id` if at least one document exists in the database that matches
@@ -431,4 +431,5 @@ declare module 'mongoose' {
     where<ResultDoc = HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>(obj: object): QueryWithHelpers<Array<ResultDoc>, ResultDoc, TQueryHelpers, T>;
     where<ResultDoc = HydratedDocument<T, TMethodsAndOverrides, TVirtuals>>(): QueryWithHelpers<Array<ResultDoc>, ResultDoc, TQueryHelpers, T>;
   }
+
 }
