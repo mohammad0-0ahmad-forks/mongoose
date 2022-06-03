@@ -14,6 +14,7 @@ Test.create({ _id: '000000000000000000000000', name: 'test' }).then(doc => {
   expectType<Types.ObjectId>(doc._id);
   expectType<string>(doc.name);
   expectType<boolean>(doc.isNew);
+});
 
 Test.create({ _id: new Types.ObjectId('000000000000000000000000'), name: 'test' }).then((doc) => {
   expectType<Types.ObjectId>(doc._id);
