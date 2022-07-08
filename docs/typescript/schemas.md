@@ -1,7 +1,11 @@
 # Schemas in TypeScript
 
 Mongoose [schemas](/docs/guide.html) are how you tell Mongoose what your documents look like.
-Mongoose schemas are separate from TypeScript interfaces, so you need to define both a _document interface_ and a _schema_.
+Mongoose schemas are separate from TypeScript interfaces, so you need to define both a _document interface_ and a _schema_ until V6.3.1.
+Mongoose supports auto typed schemas so you don't need to define additional typescript interface anymore but you are still able to do so.
+Mongoose provides a `InferSchemaType`, which infers the type of the auto typed schema document when needed.
+
+`Until mongoose V6.3.1:`
 
 ```typescript
 import { Schema } from 'mongoose';
@@ -21,24 +25,56 @@ const schema = new Schema<User>({
 });
 ```
 
+`another approach:`
+
+```typescript
+import { Schema, InferSchemaType } from 'mongoose';
+
+// Document interface
+// No need to define TS interface any more.
+// interface User {
+//   name: string;
+//   email: string;
+//   avatar?: string;
+// }
+
+// Schema
+const schema = new Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  avatar: String
+});
+
+type User = InferSchemaType<typeof schema>;
+// InferSchemaType will determine the type as follows: 
+// type User = {
+//   name: string;
+//   email: string;
+//   avatar?: string;
+// }
+
+
+```
+
 By default, Mongoose does **not** check if your document interface lines up with your schema.
 For example, the above code won't throw an error if `email` is optional in the document interface, but `required` in `schema`.
 
 ## Generic parameters
 
-The Mongoose `Schema` class in TypeScript has 3 [generic parameters](https://www.typescriptlang.org/docs/handbook/2/generics.html):
+The Mongoose `Schema` class in TypeScript has 4 [generic parameters](https://www.typescriptlang.org/docs/handbook/2/generics.html):
 
 - `DocType` - An interface descibing how the data is saved in MongoDB
 - `M` - The Mongoose model type. Can be omitted if there are no query helpers or instance methods to be defined.
   - default: `Model<DocType, any, any>`
 - `TInstanceMethods` - An interface containing the methods for the schema.
   - default: `{}`
+- `TQueryHelpers` - An interface containing query helpers defined on the schema. Defaults to `{}`.
 
 <details>
   <summary>View TypeScript definition</summary>
     
   ```typescript
-  class Schema<DocType = any, M = Model<DocType, any, any>, TInstanceMethods = {}> extends events.EventEmitter {
+  class Schema<DocType = any, M = Model<DocType, any, any>, TInstanceMethods = {}, TQueryHelpers = {}> extends events.EventEmitter {
     // ...
   }
   ```
@@ -50,7 +86,7 @@ Mongoose wraps `DocType` in a Mongoose document for cases like the `this` parame
 For example:
 
 ```typescript
-schema.pre('save', function(): void {
+schema.pre('save', function (): void {
   console.log(this.name); // TypeScript knows that `this` is a `mongoose.Document & User` by default
 });
 ```
@@ -58,6 +94,8 @@ schema.pre('save', function(): void {
 The second generic param, `M`, is the model used with the schema. Mongoose uses the `M` type in model middleware defined in the schema.
 
 The third generic param, `TInstanceMethods` is used to add types for instance methods defined in the schema.
+
+The 4th param, `TQueryHelpers`, is used to add types for [chainable query helpers](/docs/typescript/query-helpers.html).
 
 ## Schema vs Interface fields
 
@@ -99,7 +137,7 @@ interface User {
 const schema = new Schema<User, Model<User>>({
   name: { type: String, required: true },
   email: { type: String, required: true },
-  avatar: String
+  avatar: String,
 });
 ```
 
@@ -118,13 +156,13 @@ interface BlogPost {
 }
 
 interface User {
-  tags: Types.Array<string>,
-  blogPosts: Types.DocumentArray<BlogPost>
+  tags: Types.Array<string>;
+  blogPosts: Types.DocumentArray<BlogPost>;
 }
 
 const schema = new Schema<User, Model<User>>({
   tags: [String],
-  blogPosts: [{ title: String }]
+  blogPosts: [{ title: String }],
 });
 ```
 

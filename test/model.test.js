@@ -5189,7 +5189,7 @@ describe('Model', function() {
         it('watch() before connecting (gh-5964)', async function() {
           const db = start();
 
-          const MyModel = db.model('Test', new Schema({ name: String }));
+          const MyModel = db.model('Test5964', new Schema({ name: String }));
 
           // Synchronous, before connection happens
           const changeStream = MyModel.watch();
@@ -8505,7 +8505,13 @@ describe('Model', function() {
   });
 });
 
-
+describe('Check if static function that is supplied in schema option is available', function() {
+  it('should give a static function back rather than undefined', function ModelJS() {
+    const testSchema = new mongoose.Schema({}, { statics: { staticFn() { return 'Returned from staticFn'; } } });
+    const TestModel = mongoose.model('TestModel', testSchema);
+    assert.equal(TestModel.staticFn(), 'Returned from staticFn');
+  });
+});
 
 
 async function delay(ms) {
