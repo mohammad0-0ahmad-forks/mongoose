@@ -1,6 +1,5 @@
 'use strict';
 
-const webpack = require('webpack');
 const paths = require('path');
 
 const webpackConfig = {
@@ -32,27 +31,16 @@ const webpackConfig = {
       }
     ]
   },
+
   resolve: {
-    alias: {
-      'bn.js': require.resolve('bn.js')
-    },
     fallback: {
       assert: require.resolve('assert-browserify'),
-      buffer: require.resolve('buffer'),
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify')
     }
   },
   target: 'web',
-  mode: 'production',
-  plugins: [
-    new webpack.DefinePlugin({
-      process: '({env:{}})'
-    }),
-    new webpack.ProvidePlugin({
-      Buffer: ['buffer', 'Buffer']
-    })
-  ]
+  mode: 'production'
 };
 
 module.exports = webpackConfig;

@@ -33,7 +33,7 @@ describe('validation docs', function() {
    * - Validation is customizable
    */
 
-  it('Validation', async function() {
+  it('Validation', function(done) {
     const schema = new Schema({
       name: {
         type: String,
@@ -44,20 +44,17 @@ describe('validation docs', function() {
 
     // This cat has no name :(
     const cat = new Cat();
+    cat.save(function(error) {
+      assert.equal(error.errors['name'].message,
+        'Path `name` is required.');
 
-    let error;
-    try {
-      await cat.save();
-    } catch (err) {
-      error = err;
-    }
-    
-    assert.equal(error.errors['name'].message,
-      'Path `name` is required.');
-
-    error = cat.validateSync();
-    assert.equal(error.errors['name'].message,
-      'Path `name` is required.');
+      error = cat.validateSync();
+      assert.equal(error.errors['name'].message,
+        'Path `name` is required.');
+      // acquit:ignore:start
+      done();
+      // acquit:ignore:end
+    });
   });
 
   /**
@@ -70,7 +67,7 @@ describe('validation docs', function() {
    * Each of the validator links above provide more information about how to enable them and customize their error messages.
    */
 
-  it('Built-in Validators', function() {
+  it('Built-in Validators', function(done) {
     const breakfastSchema = new Schema({
       eggs: {
         type: Number,
@@ -112,6 +109,9 @@ describe('validation docs', function() {
     badBreakfast.bacon = null;
     error = badBreakfast.validateSync();
     assert.equal(error.errors['bacon'].message, 'Why no bacon?');
+    // acquit:ignore:start
+    done();
+    // acquit:ignore:end
   });
 
   /**
@@ -125,7 +125,7 @@ describe('validation docs', function() {
    * Mongoose replaces `{VALUE}` with the value being validated.
    */
 
-  it('Custom Error Messages', function() {
+  it('Custom Error Messages', function(done) {
     const breakfastSchema = new Schema({
       eggs: {
         type: Number,
@@ -153,6 +153,9 @@ describe('validation docs', function() {
     assert.equal(error.errors['eggs'].message,
       'Must be at least 6, got 2');
     assert.equal(error.errors['drink'].message, 'Milk is not supported');
+    // acquit:ignore:start
+    done();
+    // acquit:ignore:end
   });
 
   /**
@@ -213,7 +216,7 @@ describe('validation docs', function() {
    * You can find detailed instructions on how to do this in the
    * [`SchemaType#validate()` API docs](./api.html#schematype_SchemaType-validate).
    */
-  it('Custom Validators', function() {
+  it('Custom Validators', function(done) {
     const userSchema = new Schema({
       phone: {
         type: String,
@@ -246,6 +249,9 @@ describe('validation docs', function() {
     // and fits `DDD-DDD-DDDD`
     error = user.validateSync();
     assert.equal(error, null);
+    // acquit:ignore:start
+    done();
+    // acquit:ignore:end
   });
 
   /**
@@ -254,7 +260,7 @@ describe('validation docs', function() {
    * promise to settle. If the returned promise rejects, or fulfills with
    * the value `false`, Mongoose will consider that a validation error.
    */
-  it('Async Custom Validators', async function() {
+  it('Async Custom Validators', function(done) {
     const userSchema = new Schema({
       name: {
         type: String,
@@ -278,16 +284,14 @@ describe('validation docs', function() {
 
     user.email = 'test@test.co';
     user.name = 'test';
-
-    let error;
-    try {
-      await user.validate();
-    } catch (err) {
-      error = err;
-    }
-    assert.ok(error);
-    assert.equal(error.errors['name'].message, 'Oops!');
-    assert.equal(error.errors['email'].message, 'Email validation failed');
+    user.validate().catch(error => {
+      assert.ok(error);
+      assert.equal(error.errors['name'].message, 'Oops!');
+      assert.equal(error.errors['email'].message, 'Email validation failed');
+      // acquit:ignore:start
+      done();
+      // acquit:ignore:end
+    });
   });
 
   /**
@@ -300,7 +304,7 @@ describe('validation docs', function() {
    * thrown.
    */
 
-  it('Validation Errors', async function() {
+  it('Validation Errors', function(done) {
     const toySchema = new Schema({
       color: String,
       name: String
@@ -322,32 +326,30 @@ describe('validation docs', function() {
 
     const toy = new Toy({ color: 'Green', name: 'Power Ranger' });
 
-    let error;
-    try {
-      await toy.save();
-    } catch(err) {
-      error = err;
-    }
-    
-    // `error` is a ValidationError object
-    // `error.errors.color` is a ValidatorError object
-    assert.equal(error.errors.color.message, 'Color `Green` not valid');
-    assert.equal(error.errors.color.kind, 'Invalid color');
-    assert.equal(error.errors.color.path, 'color');
-    assert.equal(error.errors.color.value, 'Green');
+    toy.save(function(err) {
+      // `err` is a ValidationError object
+      // `err.errors.color` is a ValidatorError object
+      assert.equal(err.errors.color.message, 'Color `Green` not valid');
+      assert.equal(err.errors.color.kind, 'Invalid color');
+      assert.equal(err.errors.color.path, 'color');
+      assert.equal(err.errors.color.value, 'Green');
 
-    // If your validator throws an exception, mongoose will use the error
-    // message. If your validator returns `false`,
-    // mongoose will use the 'Name `Power Ranger` is not valid' message.
-    assert.equal(error.errors.name.message,
-      'Need to get a Turbo Man for Christmas');
-    assert.equal(error.errors.name.value, 'Power Ranger');
-    // If your validator threw an error, the `reason` property will contain
-    // the original error thrown, including the original stack trace.
-    assert.equal(error.errors.name.reason.message,
-      'Need to get a Turbo Man for Christmas');
+      // This is new in mongoose 5. If your validator throws an exception,
+      // mongoose will use that message. If your validator returns `false`,
+      // mongoose will use the 'Name `Power Ranger` is not valid' message.
+      assert.equal(err.errors.name.message,
+        'Need to get a Turbo Man for Christmas');
+      assert.equal(err.errors.name.value, 'Power Ranger');
+      // If your validator threw an error, the `reason` property will contain
+      // the original error thrown, including the original stack trace.
+      assert.equal(err.errors.name.reason.message,
+        'Need to get a Turbo Man for Christmas');
 
-    assert.equal(error.name, 'ValidationError');
+      assert.equal(err.name, 'ValidationError');
+      // acquit:ignore:start
+      done();
+      // acquit:ignore:end
+    });
   });
 
   /**
@@ -385,7 +387,7 @@ describe('validation docs', function() {
    * nested objects are not fully fledged paths.
    */
 
-  it('Required Validators On Nested Objects', function() {
+  it('Required Validators On Nested Objects', function(done) {
     let personSchema = new Schema({
       name: {
         first: String,
@@ -416,6 +418,9 @@ describe('validation docs', function() {
     const person = new Person();
     const error = person.validateSync();
     assert.ok(error.errors['name']);
+    // acquit:ignore:start
+    done();
+    // acquit:ignore:end
   });
 
   /**
@@ -432,7 +437,7 @@ describe('validation docs', function() {
    * Be careful: update validators are off by default because they have several
    * caveats.
    */
-  it('Update Validators', async function() {
+  it('Update Validators', function(done) {
     const toySchema = new Schema({
       color: String,
       name: String
@@ -445,15 +450,13 @@ describe('validation docs', function() {
     }, 'Invalid color');
 
     const opts = { runValidators: true };
-
-    let error;
-    try {
-      await Toy.updateOne({}, { color: 'not a color' }, opts);
-    } catch (err) {
-      error = err;
-    }
-
-    assert.equal(error.errors.color.message, 'Invalid color');
+    Toy.updateOne({}, { color: 'not a color' }, opts, function(err) {
+      assert.equal(err.errors.color.message,
+        'Invalid color');
+      // acquit:ignore:start
+      done();
+      // acquit:ignore:end
+    });
   });
 
   /**
@@ -465,7 +468,7 @@ describe('validation docs', function() {
    * not defined.
    */
 
-  it('Update Validators and `this`', async function() {
+  it('Update Validators and `this`', function(done) {
     const toySchema = new Schema({
       color: String,
       name: String
@@ -484,23 +487,22 @@ describe('validation docs', function() {
     const Toy = db.model('ActionFigure', toySchema);
 
     const toy = new Toy({ color: 'red', name: 'Red Power Ranger' });
-    let error = toy.validateSync();
+    const error = toy.validateSync();
     assert.ok(error.errors['color']);
 
     const update = { color: 'red', name: 'Red Power Ranger' };
     const opts = { runValidators: true };
 
-    error = null;
-    try {
-      await Toy.updateOne({}, update, opts);
-    } catch (err) {
-      error = err;
-    }
-    // The update validator throws an error:
-    // "TypeError: Cannot read property 'toLowerCase' of undefined",
-    // because `this` is **not** the document being updated when using
-    // update validators
-    assert.ok(error);
+    Toy.updateOne({}, update, opts, function(error) {
+      // The update validator throws an error:
+      // "TypeError: Cannot read property 'toLowerCase' of undefined",
+      // because `this` is **not** the document being updated when using
+      // update validators
+      assert.ok(error);
+      // acquit:ignore:start
+      done();
+      // acquit:ignore:end
+    });
   });
 
   /**
@@ -508,7 +510,7 @@ describe('validation docs', function() {
    * to the underlying query.
    */
 
-  it('The `context` option', async function() {
+  it('The `context` option', function(done) {
     // acquit:ignore:start
     const toySchema = new Schema({
       color: String,
@@ -529,14 +531,12 @@ describe('validation docs', function() {
     // Note the context option
     const opts = { runValidators: true, context: 'query' };
 
-    let error;
-    try {
-      await Toy.updateOne({}, update, opts);
-    } catch (err) {
-      error = err;
-    }
-
-    assert.ok(error.errors['color']);
+    Toy.updateOne({}, update, opts, function(error) {
+      assert.ok(error.errors['color']);
+      // acquit:ignore:start
+      done();
+      // acquit:ignore:end
+    });
   });
 
   /**
@@ -599,7 +599,7 @@ describe('validation docs', function() {
    * of the array.
    */
 
-  it('Update Validators Only Run For Some Operations', async function() {
+  it('Update Validators Only Run For Some Operations', function(done) {
     const testSchema = new Schema({
       number: { type: Number, max: 0 },
       arr: [{ message: { type: String, maxlength: 10 } }]
@@ -615,13 +615,17 @@ describe('validation docs', function() {
 
     let update = { $inc: { number: 1 } };
     const opts = { runValidators: true };
-
-    // There will never be a validation error here
-    await Test.updateOne({}, update, opts);
-
-    // This will never error either even though the array will have at
-    // least 2 elements.
-    update = { $push: [{ message: 'hello' }, { message: 'world' }] };
-    await Test.updateOne({}, update, opts);
+    Test.updateOne({}, update, opts, function() {
+      // There will never be a validation error here
+      update = { $push: [{ message: 'hello' }, { message: 'world' }] };
+      Test.updateOne({}, update, opts, function(error) {
+        // This will never error either even though the array will have at
+        // least 2 elements.
+        // acquit:ignore:start
+        assert.ifError(error);
+        done();
+        // acquit:ignore:end
+      });
+    });
   });
 });

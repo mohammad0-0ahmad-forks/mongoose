@@ -84,7 +84,6 @@ module.exports = function(options) {
 
   const noErrorListener = !!options.noErrorListener;
   delete options.noErrorListener;
-  options.enableUtf8Validation = false;
 
   const conn = mongoose.createConnection(uri, options);
 
@@ -160,10 +159,14 @@ module.exports.mongodVersion = async function() {
   });
 };
 
-async function dropDBs() {
-  const db = await module.exports({ noErrorListener: true }).asPromise();
-  await db.dropDatabase();
-  await db.close();
+function dropDBs(done) {
+  const db = module.exports({ noErrorListener: true });
+  db.once('open', function() {
+    // drop the default test database
+    db.db.dropDatabase(function() {
+      done();
+    });
+  });
 }
 
 before(async function() {
@@ -183,9 +186,17 @@ before(async function() {
   }
 });
 
-before(dropDBs);
+before(function(done) {
+  this.timeout(60 * 1000);
+  dropDBs(done);
+});
 
-after(dropDBs);
+after(function(done) {
+  dropDBs(() => {});
+
+  // Give `dropDatabase()` some time to run
+  setTimeout(() => done(), 250);
+});
 
 beforeEach(function() {
   if (this.currentTest) {

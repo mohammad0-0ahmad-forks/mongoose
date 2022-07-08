@@ -21,8 +21,6 @@ async function run() {
 
   const tsProjectsDirectories = await fs.readdir('benchmarks/typescript');
 
-  let failed = [];
-
   for (const tsProjectDirectory of tsProjectsDirectories) {
     let instantiations = 0;
     let memoryUsed = 0;
@@ -64,19 +62,11 @@ async function run() {
       totalTime,
       testName: tsProjectDirectory
     });
-
-    if (instantiations >= 100000) {
-      failed.push(tsProjectDirectory);
-    }
   }
 
   await persist({ results });
 
   await mongoose.disconnect();
-
-  if (failed.length > 0) {
-    throw new Error(`Benchmarks ${failed.join(', ')} had over 100k instantiations`);
-  }
 }
 
 async function persist({ results }) {

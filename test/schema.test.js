@@ -1438,7 +1438,7 @@ describe('schema', function() {
     describe('reserved keys are log a warning (gh-9010)', () => {
       this.afterEach(() => sinon.restore());
       const reservedProperties = [
-        'emit', 'listeners', 'removeListener', /* 'collection', */ // TODO: add `collection`
+        'emit', 'listeners', 'on', 'removeListener', /* 'collection', */ // TODO: add `collection`
         'errors', 'get', 'init', 'isModified', 'isNew', 'populated',
         'remove', 'save', 'toObject', 'validate'
       ];
@@ -2762,34 +2762,5 @@ describe('schema', function() {
       kind: 'event'
     });
     assert(batch.message);
-  });
-
-  it('can use on as a schema property (gh-11580)', async() => {
-    const testSchema = new mongoose.Schema({
-      on: String
-    });
-    const Test = db.model('gh11580', testSchema);
-    await Test.create({
-      on: 'Test'
-    });
-    const result = await Test.findOne();
-    assert.ok(result);
-    assert.ok(result.on);
-  });
-
-  it('disallows using schemas with schema-level projections with map subdocuments (gh-11698)', async function() {
-    const subSchema = new Schema({
-      selected: { type: Number },
-      not_selected: { type: Number, select: false }
-    });
-
-    assert.throws(() => {
-      new Schema({
-        subdocument_mapping: {
-          type: Map,
-          of: subSchema
-        }
-      });
-    }, /Cannot use schema-level projections.*subdocument_mapping.not_selected/);
   });
 });

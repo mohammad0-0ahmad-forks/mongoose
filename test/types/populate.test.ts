@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, Document, PopulatedDoc, Types, HydratedDocument, SchemaTypeOptions } from 'mongoose';
+import { Schema, model, Document, PopulatedDoc, Types, HydratedDocument } from 'mongoose';
 // Use the mongodb ObjectId to make instanceof calls possible
 import { ObjectId } from 'mongodb';
 import { expectAssignable, expectError, expectType } from 'tsd';
@@ -11,7 +11,7 @@ const childSchema: Schema = new Schema({ name: String });
 const ChildModel = model<Child>('Child', childSchema);
 
 interface Parent {
-  child: PopulatedDoc<Document<ObjectId> & Child>,
+  child?: PopulatedDoc<Child & Document<ObjectId>>,
   name?: string
 }
 
@@ -20,7 +20,7 @@ const ParentModel = model<Parent>('Parent', new Schema({
   name: String
 }));
 
-ParentModel.findOne({}).populate('child').orFail().then((doc: Document<ObjectId, {}, Parent> & Parent) => {
+ParentModel.findOne({}).populate('child').orFail().then((doc: Parent & Document) => {
   const child = doc.child;
   if (child == null || child instanceof ObjectId) {
     throw new Error('should be populated');
@@ -72,7 +72,6 @@ const Story = model<IStory>('Story', storySchema);
 
   await story.populate('author');
   await story.populate({ path: 'fans' });
-  await story.populate({ path: 'fans', model: Person });
   await story.populate(['author']);
   await story.populate([{ path: 'fans' }]);
   await story.populate(['author', { path: 'fans' }]);
@@ -188,6 +187,7 @@ function gh11503() {
 
 
 function gh11544() {
+
   interface IUser {
     friends: Types.ObjectId[];
   }
@@ -199,23 +199,6 @@ function gh11544() {
   User.findOne({}).populate({ path: 'friends', strictPopulate: false });
   User.findOne({}).populate({ path: 'friends', strictPopulate: true });
   User.findOne({}).populate({ path: 'friends', populate: { path: 'someNestedPath', strictPopulate: false } });
-}
-
-function gh11862() {
-  interface IUser {
-    userType: string;
-    friend: Types.ObjectId;
-  }
-
-  const t: SchemaTypeOptions<mongoose.Types.ObjectId> = { type: 'ObjectId', refPath: 'userType' };
-
-  const userSchema = new Schema<IUser>({
-    userType: String,
-    friend: { type: 'ObjectId', refPath: 'userType' }
-  });
-  const User = model<IUser>('friends', userSchema);
-
-  User.findOne({}).populate('friend');
 }
 
 async function _11532() {
@@ -245,81 +228,4 @@ async function _11532() {
   if (!leanResult) return;
   expectType<string>(leanResult.child.name);
   expectError(leanResult?.__v);
-}
-
-async function gh11710() {
-
-  // `Parent` represents the object as it is stored in MongoDB
-  interface Parent {
-    child?: Types.ObjectId,
-    name?: string
-  }
-  interface Child {
-    name: string;
-  }
-  interface PopulatedParent {
-    child: Child | null;
-  }
-  const ParentModel = model<Parent>('Parent', new Schema({
-    child: { type: Schema.Types.ObjectId, ref: 'Child' },
-    name: String
-  }));
-  const childSchema: Schema = new Schema({ name: String });
-  const ChildModel = model<Child>('Child', childSchema);
-
-  // Populate with `Paths` generic `{ child: Child }` to override `child` path
-  const doc = await ParentModel.findOne({}).populate<Pick<PopulatedParent, 'child'>>('child').orFail();
-  expectType<Child | null>(doc.child);
-}
-
-function gh11758() {
-  interface NestedChild {
-    name: string
-    _id: Types.ObjectId
-  }
-  const nestedChildSchema: Schema = new Schema({ name: String });
-
-  interface Parent {
-    nestedChild: Types.ObjectId
-    name?: string
-  }
-
-  const ParentModel = model<Parent>('Parent', new Schema({
-    nestedChild: { type: Schema.Types.ObjectId, ref: 'NestedChild' },
-    name: String
-  }));
-
-  const NestedChildModel = model<NestedChild>('NestedChild', nestedChildSchema);
-
-  const parent = new ParentModel({
-    nestedChild: new NestedChildModel({ name: 'test' }),
-    name: 'Parent'
-  }).$assertPopulated<{ nestedChild: NestedChild }>('nestedChild');
-
-  expectType<string>(parent.nestedChild.name);
-}
-
-async function gh11955() {
-  // `Parent` represents the object as it is stored in MongoDB
-  interface Parent {
-    children?: Types.ObjectId[],
-    name?: string
-  }
-
-  const ParentModel = model<Parent>('Parent', new Schema({
-    children: [{ type: Schema.Types.ObjectId, ref: 'Child' }],
-    name: String
-  }));
-
-  interface Child {
-    name: string;
-  }
-  const childSchema: Schema = new Schema({ name: String });
-  model<Child>('Child', childSchema);
-
-  const parent = await ParentModel.findOne({}).exec();
-
-  const populatedParent = await parent!.populate<{ children: Child[] }>('child');
-
-  populatedParent.children.find(({ name }) => console.log(name));
 }

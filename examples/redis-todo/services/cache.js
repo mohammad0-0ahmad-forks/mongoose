@@ -2,10 +2,12 @@
 
 const mongoose = require('mongoose');
 const redis = require('redis');
+const util = require('util');
 
 // setting up redis server
 const client = redis.createClient();
-client.connect().then();
+client.hget = util.promisify(client.hget);
+
 const exec = mongoose.Query.prototype.exec;
 
 mongoose.Query.prototype.cache = function(options = {}) {
@@ -24,7 +26,7 @@ mongoose.Query.prototype.exec = async function() {
   );
 
   // looking for cache
-  const cacheData = await client.hGet(this.hashKey, key).catch((err) => console.log(err));
+  const cacheData = await client.hget(this.hashKey, key);
   if (cacheData) {
     console.log('from redis');
     const doc = JSON.parse(cacheData);
@@ -33,7 +35,7 @@ mongoose.Query.prototype.exec = async function() {
   }
 
   const result = await exec.apply(this, arguments);
-  client.hSet(this.hashKey, key, JSON.stringify(result));
+  client.hset(this.hashKey, key, JSON.stringify(result));
   return result;
 };
 

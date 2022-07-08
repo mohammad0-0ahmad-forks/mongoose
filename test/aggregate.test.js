@@ -17,7 +17,7 @@ const Schema = mongoose.Schema;
  * Test data
  */
 
-async function setupData(db) {
+function setupData(db, callback) {
   const EmployeeSchema = new Schema({
     name: String,
     sal: Number,
@@ -26,6 +26,7 @@ async function setupData(db) {
     reportsTo: String
   });
 
+  let saved = 0;
   const emps = [
     { name: 'Alice', sal: 18000, dept: 'sales', customers: ['Eve', 'Fred'] },
     { name: 'Bob', sal: 15000, dept: 'sales', customers: ['Gary', 'Herbert', 'Isaac'], reportsTo: 'Alice' },
@@ -34,9 +35,17 @@ async function setupData(db) {
   ];
   const Employee = db.model('Employee', EmployeeSchema);
 
-  await Employee.deleteMany({});
+  Employee.deleteMany({}, function() {
+    emps.forEach(function(data) {
+      const emp = new Employee(data);
 
-  await Employee.create(emps);
+      emp.save(function() {
+        if (++saved === emps.length) {
+          callback();
+        }
+      });
+    });
+  });
 }
 
 /**
@@ -575,8 +584,8 @@ describe('aggregate: ', function() {
   });
 
   describe('exec', function() {
-    beforeEach(async function() {
-      await setupData(db);
+    beforeEach(function(done) {
+      setupData(db, done);
     });
 
     it('project', async function() {
@@ -659,25 +668,29 @@ describe('aggregate: ', function() {
       assert.ok(threw);
     });
 
-    it('match', function() {
+    it('match', function(done) {
       const aggregate = new Aggregate([], db.model('Employee'));
 
-      return aggregate.
+      aggregate.
         match({ sal: { $gt: 15000 } }).
         exec(function(err, docs) {
           assert.ifError(err);
           assert.equal(docs.length, 1);
+
+          done();
         });
     });
 
-    it('sort', function() {
+    it('sort', function(done) {
       const aggregate = new Aggregate([], db.model('Employee'));
 
-      return aggregate.
+      aggregate.
         sort('sal').
         exec(function(err, docs) {
           assert.ifError(err);
           assert.equal(docs[0].sal, 14000);
+
+          done();
         });
     });
 
@@ -752,10 +765,10 @@ describe('aggregate: ', function() {
       ]);
     });
 
-    it('complex pipeline', function() {
+    it('complex pipeline', function(done) {
       const aggregate = new Aggregate([], db.model('Employee'));
 
-      return aggregate.
+      aggregate.
         match({ sal: { $lt: 16000 } }).
         unwind('customers').
         project({ emp: '$name', cust: '$customers' }).
@@ -766,6 +779,8 @@ describe('aggregate: ', function() {
           assert.equal(docs.length, 1);
           assert.equal(docs[0].cust, 'Gary');
           assert.equal(docs[0].emp, 'Bob');
+
+          done();
         });
     });
 
@@ -1071,13 +1086,18 @@ describe('aggregate: ', function() {
     assert.equal(err.name, 'MongoServerError');
   });
 
-  it('cursor() without options (gh-3855)', function() {
+  it('cursor() without options (gh-3855)', function(done) {
+    const db = start();
+
     const MyModel = db.model('Test', { name: String });
 
-    const cursor = MyModel.
-      aggregate([{ $match: { name: 'test' } }]).
-      cursor();
-    assert.ok(cursor instanceof require('stream').Readable);
+    db.on('open', function() {
+      const cursor = MyModel.
+        aggregate([{ $match: { name: 'test' } }]).
+        cursor();
+      assert.ok(cursor instanceof require('stream').Readable);
+      done();
+    });
   });
 
   it('cursor() with useMongooseAggCursor (gh-5145)', function() {
@@ -1089,48 +1109,56 @@ describe('aggregate: ', function() {
     assert.ok(cursor instanceof require('stream').Readable);
   });
 
-  it('cursor() with useMongooseAggCursor works (gh-5145) (gh-5394)', async function() {
+  it('cursor() with useMongooseAggCursor works (gh-5145) (gh-5394)', function(done) {
     const MyModel = db.model('Test', { name: String });
 
-    await MyModel.create({ name: 'test' });
+    MyModel.create({ name: 'test' }, function(error) {
+      assert.ifError(error);
 
-    const docs = [];
-    await MyModel.
-      aggregate([{ $match: { name: 'test' } }]).
-      cursor({ useMongooseAggCursor: true }).
-      eachAsync(function(doc) {
-        docs.push(doc);
-      });
-
-    assert.equal(docs.length, 1);
-    assert.equal(docs[0].name, 'test');
+      const docs = [];
+      MyModel.
+        aggregate([{ $match: { name: 'test' } }]).
+        cursor({ useMongooseAggCursor: true }).
+        eachAsync(function(doc) {
+          docs.push(doc);
+        }).
+        then(function() {
+          assert.equal(docs.length, 1);
+          assert.equal(docs[0].name, 'test');
+          done();
+        });
+    });
   });
 
-  it('cursor() eachAsync (gh-4300)', async function() {
+  it('cursor() eachAsync (gh-4300)', function(done) {
     const MyModel = db.model('Test', { name: String });
 
     let cur = 0;
     const expectedNames = ['Axl', 'Slash'];
-
-    await MyModel.create([{ name: 'Axl' }, { name: 'Slash' }]);
-
-    await MyModel.aggregate([{ $sort: { name: 1 } }]).
-      cursor().
-      eachAsync(function(doc) {
-        const _cur = cur;
-        assert.equal(doc.name, expectedNames[cur]);
-        return {
-          then: function(resolve) {
-            setTimeout(function() {
-              assert.equal(_cur, cur++);
-              resolve();
-            }, 50);
-          }
-        };
-      });
+    MyModel.create([{ name: 'Axl' }, { name: 'Slash' }]).
+      then(function() {
+        return MyModel.aggregate([{ $sort: { name: 1 } }]).
+          cursor().
+          eachAsync(function(doc) {
+            const _cur = cur;
+            assert.equal(doc.name, expectedNames[cur]);
+            return {
+              then: function(resolve) {
+                setTimeout(function() {
+                  assert.equal(_cur, cur++);
+                  resolve();
+                }, 50);
+              }
+            };
+          }).
+          then(function() {
+            done();
+          });
+      }).
+      catch(done);
   });
 
-  it('cursor() eachAsync with options (parallel)', async function() {
+  it('cursor() eachAsync with options (parallel)', function(done) {
     const MyModel = db.model('Test', { name: String });
 
     const names = [];
@@ -1147,34 +1175,40 @@ describe('aggregate: ', function() {
         }
       };
     };
-
-    await MyModel.create([{ name: 'Axl' }, { name: 'Slash' }]);
-
-    await MyModel.aggregate([{ $sort: { name: 1 } }]).
-      cursor().
-      eachAsync(checkDoc, { parallel: 2 }).then(function() {
-        assert.ok(Date.now() - startedAt[1] >= 100, Date.now() - startedAt[1]);
-        assert.equal(startedAt.length, 2);
-        assert.ok(startedAt[1] - startedAt[0] < 50, `${startedAt[1] - startedAt[0]}`);
-        assert.deepEqual(names.sort(), expectedNames);
-      });
+    MyModel.create([{ name: 'Axl' }, { name: 'Slash' }]).
+      then(function() {
+        return MyModel.aggregate([{ $sort: { name: 1 } }]).
+          cursor().
+          eachAsync(checkDoc, { parallel: 2 }).then(function() {
+            assert.ok(Date.now() - startedAt[1] >= 100, Date.now() - startedAt[1]);
+            assert.equal(startedAt.length, 2);
+            assert.ok(startedAt[1] - startedAt[0] < 50, `${startedAt[1] - startedAt[0]}`);
+            assert.deepEqual(names.sort(), expectedNames);
+            done();
+          });
+      }).
+      catch(done);
   });
 
-  it('is now a proper aggregate cursor vs what it was before gh-10410', function() {
+  it('is now a proper aggregate cursor vs what it was before gh-10410', function(done) {
     const MyModel = db.model('Test', { name: String });
     assert.throws(() => {
       MyModel.aggregate([]).cursor({ batchSize: 1000 }).exec();
     });
+    done();
   });
 
-  it('query by document (gh-4866)', async function() {
+  it('query by document (gh-4866)', function(done) {
     const MyModel = db.model('Test', {
       name: String
     });
 
-    const doc = await MyModel.create({ name: 'test' });
-    const res = await MyModel.aggregate([{ $match: doc }]);
-    assert.equal(res.length, 1);
+    MyModel.create({ name: 'test' }).
+      then(function(doc) { return MyModel.aggregate([{ $match: doc }]); }).
+      then(function() {
+        done();
+      }).
+      catch(done);
   });
 
   it('sort by text score (gh-5258)', async function() {
