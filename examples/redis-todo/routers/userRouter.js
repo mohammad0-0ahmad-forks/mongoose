@@ -15,12 +15,7 @@ Router.post('/create', async function({ body }, res) {
   try {
     // storing password
     const password = new Password({ password: body.password });
-    const user = new User({
-      name: body.name,
-      username: body.username,
-      email: body.email,
-      passwordId: password._id
-    }); // body = user data
+    const user = new User({ ...body, passwordId: password._id }); // body = user data
 
     // gen auth token
     const token = await user.genAuthToken();
@@ -31,7 +26,7 @@ Router.post('/create', async function({ body }, res) {
     res.status(201).json({ token });
   } catch (err) {
     console.log(err);
-    res.status(501).send('Server Error');
+    res.status(501).send('Server Error: ' + err);
   }
 });
 
@@ -53,7 +48,7 @@ Router.post('/login', async function({ body }, res) {
     const token = user.genAuthToken();
     res.status(201).json({ token });
   } catch (err) {
-    res.status(501).send('Server Error');
+    res.status(501).send('Server Error: ' + err);
   }
 });
 
@@ -78,7 +73,7 @@ Router.post('/update', auth, async function({ userId, body }, res) {
 
     res.status(200).json({ user: updatedUser });
   } catch (err) {
-    res.status(500).send('Server Error');
+    res.status(500).send('Server Error: ' + err);
   }
 });
 
@@ -91,7 +86,7 @@ Router.delete('/delete', auth, async function({ userId }, res) {
     await Todo.deleteMany({ userId });
     res.status(200).send({ msg: 'User deleted' });
   } catch (err) {
-    res.status(501).send('Server Error');
+    res.status(501).send('Server Error: ' + err);
   }
 });
 

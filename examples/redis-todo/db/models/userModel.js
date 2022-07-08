@@ -3,7 +3,6 @@
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const JWT_SECRET = require('../../config').JWT_SECRET;
 
 const { Schema, model } = mongoose;
 
@@ -27,7 +26,7 @@ userSchema.methods.toJSON = function() {
 
 // creating token
 userSchema.methods.genAuthToken = function() {
-  return jwt.sign({ userId: this._id.toString() }, JWT_SECRET); // this = user
+  return jwt.sign({ userId: this._id.toString() }, 'token'); // this = user
 };
 
 // password hasing

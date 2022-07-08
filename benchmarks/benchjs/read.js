@@ -7,7 +7,7 @@ const suite = new Benchmark.Suite();
 
 const Schema = mongoose.Schema;
 const ObjectId = Schema.Types.ObjectId;
-const mongoClient = require('mongodb').MongoClient;
+const mongo = require('mongodb');
 const utils = require('../../lib/utils.js');
 
 // to make things work in the way the are normally described online...
@@ -20,11 +20,12 @@ const utils = require('../../lib/utils.js');
  * These are all the benchmark tests for reading data
  */
 
-mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
+
+mongoose.connect('mongodb://localhost/mongoose-bench', function(err) {
   if (err) {
     throw err;
   }
-  mongoClient.connect('mongodb://localhost', function (err, client) {
+  mongo.connect('mongodb://localhost', function(err, client) {
     if (err) {
       throw err;
     }
@@ -36,7 +37,7 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
       title: String,
       date: Date,
       body: String,
-      comments: [Comments],
+      comments: [Comments]
     });
 
     let BlogPost = new Schema({
@@ -46,7 +47,7 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
       date: Date,
       meta: {
         date: Date,
-        visitors: Number,
+        visitors: Number
       },
       published: Boolean,
       mixed: {},
@@ -56,8 +57,8 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
       comments: [Comments],
       def: {
         type: String,
-        default: 'kandinsky',
-      },
+        default: 'kandinsky'
+      }
     });
 
     const blogData = {
@@ -71,13 +72,13 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
       numbers: [1, 2, 7, 10, 23432],
       tags: ['test', 'BENCH', 'things', 'more things'],
       def: 'THANGS!!!',
-      comments: [],
+      comments: []
     };
     const commentData = {
       title: 'test comment',
       date: new Date(),
       body: 'this be some crazzzyyyyy text that would go in a comment',
-      comments: [{ title: 'second level', date: new Date(), body: 'texttt' }],
+      comments: [{ title: 'second level', date: new Date(), body: 'texttt' }]
     };
     for (let i = 0; i < 5; i++) {
       blogData.comments.push(commentData);
@@ -86,7 +87,7 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
       name: String,
       age: Number,
       likes: [String],
-      address: String,
+      address: String
     });
 
     const User = mongoose.model('User', UserSchema);
@@ -104,14 +105,14 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
       name: 'name',
       age: 0,
       likes: ['dogs', 'cats', 'pizza'],
-      address: ' Nowhere-ville USA',
+      address: ' Nowhere-ville USA'
     };
 
     // insert all of the data here
     let count = 4000;
     for (let i = 0; i < 1000; i++) {
       data.age = Math.floor(Math.random() * 50);
-      User.create(data, function (err, u) {
+      User.create(data, function(err, u) {
         if (err) {
           throw err;
         }
@@ -119,14 +120,14 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
         --count || next();
       });
       const nData = utils.clone(data);
-      user.insertOne(nData, function (err, res) {
+      user.insert(nData, function(err, res) {
         if (err) {
           throw err;
         }
-        dIds.push(res.insertedId);
+        dIds.push(res.insertedIds[0]);
         --count || next();
       });
-      BlogPost.create(blogData, function (err, bp) {
+      BlogPost.create(blogData, function(err, bp) {
         if (err) {
           throw err;
         }
@@ -135,19 +136,19 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
       });
 
       const bpData = utils.clone(blogData);
-      blogpost.insertOne(bpData, function (err, res) {
+      blogpost.insert(bpData, function(err, res) {
         if (err) {
           throw err;
         }
-        bdIds.push(res.insertedId);
+        bdIds.push(res.insertedIds[0]);
         --count || next();
       });
     }
 
     let mi = 0,
-      di = 0,
-      bmi = 0,
-      bdi = 0;
+        di = 0,
+        bmi = 0,
+        bdi = 0;
 
     function getNextmId() {
       mi = ++mi % mIds.length;
@@ -170,139 +171,139 @@ mongoose.connect('mongodb://localhost/mongoose-bench', function (err) {
     }
 
     function closeDB() {
-      mongoose.connection.db.dropDatabase(function () {
+      mongoose.connection.db.dropDatabase(function() {
         mongoose.disconnect();
         process.exit();
       });
     }
 
-    suite
-      .add('Read - Mongoose - Basic', {
-        defer: true,
-        fn: function (deferred) {
-          User.findOne({ _id: getNextmId() }, function (err) {
-            if (err) {
-              throw err;
-            }
-            deferred.resolve();
-          });
-        },
-      })
-      .add('Read - Driver - Basic', {
-        defer: true,
-        fn: function (deferred) {
-          user.findOne({ _id: getNextdId() }, function (err) {
-            if (err) {
-              throw err;
-            }
-            deferred.resolve();
-          });
-        },
-      })
-      .add('Read - Mongoose - With lean', {
-        defer: true,
-        fn: function (deferred) {
-          User.findOne(
-            { _id: getNextmId() },
-            {},
-            { lean: true },
-            function (err) {
-              if (err) {
-                throw err;
-              }
-              deferred.resolve();
-            }
-          );
-        },
-      })
-      .add('Read - Mongoose - Multiple Items', {
-        defer: true,
-        fn: function (deferred) {
-          const ids = [];
-          for (let i = 0; i < 25; i++) {
-            ids.push(getNextmId());
+    suite.add('Read - Mongoose - Basic', {
+      defer: true,
+      fn: function(deferred) {
+        User.findOne({ _id: getNextmId() }, function(err) {
+          if (err) {
+            throw err;
           }
-          User.find({ _id: { $in: ids } }, function (err) {
-            if (err) {
-              throw err;
-            }
-            deferred.resolve();
-          });
-        },
-      })
-      .add('Read - Driver - Multiple Items', {
-        defer: true,
-        fn: function (deferred) {
-          const ids = [];
-          for (let i = 0; i < 25; i++) {
-            ids.push(getNextdId());
+          deferred.resolve();
+        });
+      }
+    }).add('Read - Driver - Basic', {
+      defer: true,
+      fn: function(deferred) {
+        user.findOne({ _id: getNextdId() }, function(err) {
+          if (err) {
+            throw err;
           }
-          user.find({ _id: { $in: ids } }).toArray(function (err) {
+          deferred.resolve();
+        });
+      }
+    }).add('Read - Mongoose - With lean', {
+      defer: true,
+      fn: function(deferred) {
+        User.findOne({ _id: getNextmId() }, {}, { lean: true }, function(err) {
+          if (err) {
+            throw err;
+          }
+          deferred.resolve();
+        });
+      }
+    }).add('Read - Mongoose - Multiple Items', {
+      defer: true,
+      fn: function(deferred) {
+        const ids = [];
+        for (let i = 0; i < 25; i++) {
+          ids.push(getNextmId());
+        }
+        User.find({ _id: { $in: ids } }, function(err) {
+          if (err) {
+            throw err;
+          }
+          deferred.resolve();
+        });
+      }
+    }).add('Read - Driver - Multiple Items', {
+      defer: true,
+      fn: function(deferred) {
+        const ids = [];
+        for (let i = 0; i < 25; i++) {
+          ids.push(getNextdId());
+        }
+        user.find({ _id: { $in: ids } }, function(err, cursor) {
+          if (err) {
+            throw err;
+          }
+          cursor.toArray(function(err) {
             if (err) {
               throw err;
             }
             deferred.resolve();
           });
-        },
-      })
-      .add('Read - Mongoose - Non-index', {
-        defer: true,
-        fn: function (deferred) {
-          const age = Math.floor(Math.random() * 50);
+        });
+      }
+    }).add('Read - Mongoose - Non-index', {
+      defer: true,
+      fn: function(deferred) {
+        const age = Math.floor(Math.random() * 50);
 
-          User.find({ age: age }, function (err) {
-            if (err) {
-              throw err;
-            }
-            deferred.resolve();
-          });
-        },
-      })
-      .add('Read - Driver - Non-index', {
-        defer: true,
-        fn: function (deferred) {
-          const age = Math.floor(Math.random() * 50);
+        User.find({ age: age }, function(err) {
+          if (err) {
+            throw err;
+          }
+          deferred.resolve();
+        });
+      }
+    }).add('Read - Driver - Non-index', {
+      defer: true,
+      fn: function(deferred) {
+        const age = Math.floor(Math.random() * 50);
 
-          user.find({ age: age }).toArray(function (err) {
+        user.find({ age: age }, function(err, cursor) {
+          if (err) {
+            throw err;
+          }
+          cursor.toArray(function(err) {
             if (err) {
               throw err;
             }
             deferred.resolve();
           });
-        },
-      })
-      .add('Read - Mongoose - Embedded Docs', {
-        defer: true,
-        fn: function (deferred) {
-          BlogPost.find({ _id: getNextbmId() }, function (err) {
+        });
+      }
+    }).add('Read - Mongoose - Embedded Docs', {
+      defer: true,
+      fn: function(deferred) {
+        BlogPost.find({ _id: getNextbmId() }, function(err) {
+          if (err) {
+            throw err;
+          }
+          deferred.resolve();
+        });
+      }
+    }).add('Read - Driver - Embedded Docs', {
+      defer: true,
+      fn: function(deferred) {
+        blogpost.find({ _id: getNextbdId() }, function(err, cursor) {
+          if (err) {
+            throw err;
+          }
+          cursor.toArray(function(err) {
             if (err) {
               throw err;
             }
             deferred.resolve();
           });
-        },
-      })
-      .add('Read - Driver - Embedded Docs', {
-        defer: true,
-        fn: function (deferred) {
-          blogpost.find({ _id: getNextbdId() }).toArray(function (err) {
-            if (err) {
-              throw err;
-            }
-            deferred.resolve();
-          });
-        },
-      })
-      .on('cycle', function (evt) {
+        });
+      }
+    })
+      .on('cycle', function(evt) {
         if (process.env.MONGOOSE_DEV || process.env.PULL_REQUEST) {
           console.log(String(evt.target));
         }
-      })
-      .on('complete', function () {
+      }).on('complete', function() {
         closeDB();
         if (!process.env.MONGOOSE_DEV && !process.env.PULL_REQUEST) {
           const outObj = {};
-          this.forEach(function (item) {
+          this.forEach(function(item) {
             const out = {};
             out.stats = item.stats;
             delete out.stats.sample;

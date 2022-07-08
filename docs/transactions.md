@@ -20,7 +20,7 @@ or [`Connection#startSession()`](/docs/api/connection.html#connection_Connection
 const session = await mongoose.startSession();
 
 // Using custom connection
-const db = await mongoose.createConnection(mongodbUri).asPromise();
+const db = await mongoose.createConnection(mongodbUri);
 const session = await db.startSession();
 ```
 

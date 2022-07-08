@@ -14,10 +14,7 @@ var Project = mongoose.model('Project', ProjectSchema);
 Project.find().where('stars').gt(1000).byName('mongoose');
 ```
 
-In TypeScript, Mongoose does support manually typed and automatically typed Query Helpers.
-
-1- Manually typed:
-Mongoose's `Model` takes 3 generic parameters:
+In TypeScript, Mongoose's `Model` takes 3 generic parameters:
 
 1. The `DocType`
 2. a `TQueryHelpers` type
@@ -27,65 +24,34 @@ The 2nd generic parameter, `TQueryHelpers`, should be an interface that contains
 Below is an example of creating a `ProjectModel` with a `byName` query helper.
 
 ```typescript
-import { HydratedDocument, Model, Query, Schema, model } from 'mongoose';
+import { Document, Model, Query, Schema, connect, model } from 'mongoose';
 
 interface Project {
   name: string;
   stars: number;
 }
 
-type ProjectModelType = Model<Project, ProjectQueryHelpers>;
-// Query helpers should return `Query<any, Document<DocType>> & ProjectQueryHelpers`
-// to enable chaining.
-type ProjectModelQuery = Query<any, HydratedDocument<Project>, ProjectQueryHelpers> & ProjectQueryHelpers;
-interface ProjectQueryHelpers {
-  byName(this: ProjectModelQuery, name: string): ProjectModelQuery;
-}
-
-const schema = new Schema<Project, ProjectModelType, {}, ProjectQueryHelpers>({
+const schema = new Schema<Project>({
   name: { type: String, required: true },
   stars: { type: Number, required: true }
 });
-schema.query.byName = function(name: string): ProjectModelQuery {
+// Query helpers should return `Query<any, Document<DocType>> & ProjectQueryHelpers`
+// to enable chaining.
+interface ProjectQueryHelpers {
+  byName(name: string): Query<any, Document<Project>> & ProjectQueryHelpers;
+}
+schema.query.byName = function(name): Query<any, Document<Project>> & ProjectQueryHelpers {
   return this.find({ name: name });
 };
 
 // 2nd param to `model()` is the Model class to return.
-const ProjectModel = model<Project, ProjectModelType>('Project', schema);
+const ProjectModel = model<Project, Model<Project, ProjectQueryHelpers>>('Project', schema);
 
 run().catch(err => console.log(err));
 
 async function run(): Promise<void> {
   await connect('mongodb://localhost:27017/test');
   
-  // Equivalent to `ProjectModel.find({ stars: { $gt: 1000 }, name: 'mongoose' })`
-  await ProjectModel.find().where('stars').gt(1000).byName('mongoose');
-}
-```
-
-2- Automatically typed:
-Mongoose does support auto typed Query Helpers that it are supplied in schema options.
-Query Helpers functions can be defined as following:
-
-```typescript
-import { Schema, model } from 'mongoose';
-
-  const schema = new Schema({
-    name: { type: String, required: true },
-    stars: { type: Number, required: true }
-  }, {
-    query: {
-      byName(name) {
-        return this.find({ name: name });
-      }
-    }
-  });
-
-  const ProjectModel = model(
-    'Project',
-    schema
-  );
-
   // Equivalent to `ProjectModel.find({ stars: { $gt: 1000 }, name: 'mongoose' })`
   await ProjectModel.find().where('stars').gt(1000).byName('mongoose');
 }
